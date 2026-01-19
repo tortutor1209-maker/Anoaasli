@@ -179,6 +179,62 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ data }) => {
     );
   };
 
+  const ThumbnailAsset = ({ prompt, id, label, icon, ratio }: { prompt: string, id: string, label: string, icon: string, ratio: "9:16" | "16:9" }) => {
+    const visualized = visualizedImages[id];
+    const isGenerating = isGeneratingImage === id;
+
+    return (
+      <div className="glass-effect p-8 rounded-3xl colorful-border space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <span className="flex items-center gap-2 font-black text-xs uppercase tracking-widest">
+            <i className={`${icon} text-xl`}></i> {label}
+          </span>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => handleVisualize(prompt, id, ratio)} 
+              disabled={isGenerating}
+              className="px-4 py-2 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-800 transition-all"
+            >
+              {isGenerating ? <i className="fa-solid fa-spinner animate-spin"></i> : <i className="fa-solid fa-wand-magic-sparkles"></i>} VISUAL
+            </button>
+            <button 
+              onClick={() => copyToClipboard(prompt, id)} 
+              className="w-10 h-10 rounded-xl border border-black/10 bg-white hover:bg-neutral-50 transition-all flex items-center justify-center"
+            >
+              <i className={copied === id ? "fa-solid fa-check text-green-500" : "fa-solid fa-copy"}></i>
+            </button>
+          </div>
+        </div>
+        <p className="bg-black/5 p-4 rounded-xl text-sm italic border border-black/5 line-clamp-3">
+          {prompt}
+        </p>
+        
+        {visualized && !isGenerating && (
+          <div className="mt-4 space-y-4 animate-in zoom-in duration-500">
+            <div className={`overflow-hidden rounded-xl border border-black/10 shadow-lg ${ratio === "9:16" ? "aspect-[9/16] max-w-[200px] mx-auto" : "aspect-video w-full"}`}>
+              <img src={visualized.url} className="w-full h-full object-cover" />
+            </div>
+            <div className="flex gap-2">
+              <a href={visualized.url} download={`anoalabs_thumb_${id}.png`} className="flex-1 py-3 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest text-center shadow-lg hover:bg-neutral-800">
+                <i className="fa-solid fa-download mr-1"></i> DOWNLOAD GAMBAR
+              </a>
+              <button onClick={() => handleVisualize(prompt, id, ratio)} className="px-4 py-3 bg-white border border-black/10 rounded-xl hover:bg-neutral-50 transition-all">
+                <i className="fa-solid fa-rotate-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isGenerating && (
+          <div className="mt-4 flex flex-col items-center justify-center p-12 bg-neutral-100/50 rounded-xl border border-dashed border-black/10 animate-pulse">
+            <i className="fa-solid fa-spinner animate-spin text-black/20 text-3xl mb-3"></i>
+            <span className="text-[10px] font-black text-black/30 uppercase tracking-widest text-center">Membangun Visualisasi...</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 glass-effect p-8 rounded-3xl colorful-border shadow-2xl bg-white/80">
@@ -269,16 +325,20 @@ export const StoryDisplay: React.FC<StoryDisplayProps> = ({ data }) => {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-           <div className="glass-effect p-8 rounded-3xl colorful-border space-y-4">
-              <span className="flex items-center gap-2 font-black text-xs uppercase tracking-widest"><i className="fa-brands fa-tiktok text-xl"></i> TikTok Thumbnail Prompt (9:16)</span>
-              <p className="bg-black/5 p-4 rounded-xl text-sm italic border border-black/5">{data.tiktokCover}</p>
-              <button onClick={() => copyToClipboard(data.tiktokCover, 'tk')} className="w-full py-2 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest">{copied === 'tk' ? 'COPIED' : 'COPY PROMPT'}</button>
-           </div>
-           <div className="glass-effect p-8 rounded-3xl colorful-border space-y-4">
-              <span className="flex items-center gap-2 font-black text-xs uppercase tracking-widest"><i className="fa-brands fa-youtube text-xl"></i> YouTube Thumbnail Prompt (16:9)</span>
-              <p className="bg-black/5 p-4 rounded-xl text-sm italic border border-black/5">{data.youtubeCover}</p>
-              <button onClick={() => copyToClipboard(data.youtubeCover, 'yt')} className="w-full py-2 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest">{copied === 'yt' ? 'COPIED' : 'COPY PROMPT'}</button>
-           </div>
+           <ThumbnailAsset 
+             prompt={data.tiktokCover} 
+             id="tiktok-cover" 
+             label="TikTok Thumbnail Prompt (9:16)" 
+             icon="fa-brands fa-tiktok" 
+             ratio="9:16" 
+           />
+           <ThumbnailAsset 
+             prompt={data.youtubeCover} 
+             id="youtube-cover" 
+             label="YouTube Thumbnail Prompt (16:9)" 
+             icon="fa-brands fa-youtube" 
+             ratio="16:9" 
+           />
         </div>
 
         <div className="glass-effect p-8 rounded-3xl border border-black/10">
