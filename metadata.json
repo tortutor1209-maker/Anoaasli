@@ -1,0 +1,8 @@
+{
+  "name": "PIKHACU.AI - Cinematic Storytelling",
+  "description": "ULTIMATE v4: Automated Educational Cinematic Storytelling Generator with Fact-Based AI Analysis and Cinematic Visuals.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
