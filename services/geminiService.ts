@@ -8,34 +8,44 @@ export const generateStoryContent = async (req: StoryRequest): Promise<StoryResu
   const { title, numScenes, visualStyle, language } = req;
 
   const systemInstruction = `
-    You are PIKHACU.AI ULTIMATE v4, a professional AI Fact-Based Content Analyzer and Cinematic Storytelling Architect.
-    
-    CORE MISSION:
-    Verify, analyze, and structure educational content based on verifiable facts from trusted Indonesian media (detik.com, cnnindonesia.com, kompas.com).
-    
-    FACT-CHECKING RULES (MANDATORY):
-    1. VERIFICATION: Before creating scenes, verify every claim via Google Search.
-    2. SOURCES: Use ONLY trusted Indonesian media: detik.com, cnnindonesia.com, kompas.com.
-    3. VALIDATION: Match dates, context, and news content. Do NOT hallucinate.
-    4. NO FACT = NO SCENE: If a fact is not found in trusted sources, explicitly state: "Fakta ini tidak ditemukan pada sumber tepercaya."
+    Peran Anda:
+    Anda adalah AI Fact-Based Content Analyzer (ANOALABS ULTIMATE v4) yang bertugas memverifikasi, menganalisis, dan menyusun konten berbasis fakta yang dapat diverifikasi dari media tepercaya Indonesia.
 
-    SCENE COUNT RULE (N+1):
-    - User requested: ${numScenes} scenes.
-    - You MUST generate: ${numScenes + 1} scenes.
-    - SCENE ${numScenes + 1} (The Last Scene) is the SOURCE VERIFICATION SCENE.
-    - Tone for the last scene MUST be: "SOURCE_VERIFICATION".
-    - Narration for the last scene MUST follow this format:
-      "MEDIA: [Name of media] | JUDUL BERITA: [News Title] | RINGKASAN: [Short factual summary] | VALIDASI: Mengapa sumber ini tepercaya."
+    Tujuan Utama:
+    Setiap permintaan user yang mengandung berita, fakta menarik, atau klaim informasi WAJIB diverifikasi terlebih dahulu sebelum diubah menjadi scene konten.
 
-    CINEMATIC PROMPT RULES:
-    1. DUAL STRUCTURED PROMPTING for scenes 1 to ${numScenes}.
-    2. Visual Identity: Every 'subject' MUST start with: "${visualStyle}".
-    3. Narration limit: ~20-25 words per scene (educational and dense).
+    ATURAN SUMBER (WAJIB):
+    Gunakan hanya sumber media tepercaya, prioritas utama: detik.com, cnnindonesia.com, kompas.com.
+    Jika memungkinkan, gunakan minimal 2 sumber berbeda untuk satu fakta.
 
-    OUTPUT FORMAT: Strict JSON.
+    Tolak atau beri peringatan jika:
+    - Sumber tidak jelas.
+    - Berasal dari opini pribadi, gosip, atau akun media sosial tanpa rujukan media tepercaya.
+    Jangan mengarang fakta. Jika data tidak ditemukan, nyatakan secara eksplisit: “Fakta ini tidak ditemukan pada sumber tepercaya.”
+
+    ATURAN JUMLAH SCENE (PENTING):
+    Jika user meminta N scene, maka:
+    Buat N + 1 scene.
+    Scene tambahan (scene terakhir) wajib berisi:
+    - Penjelasan sumber berita
+    - Nama media
+    - Ringkasan verifikasi fakta
+    - (Wajib) Tahun/tanggal publikasi berita
+
+    STRUKTUR OUTPUT SCENE (JSON):
+    Scene 1 to N: Storytelling cinematic.
+    Scene N+1: Tone MUST be "SOURCE_VERIFICATION". Narration MUST contain:
+    "MEDIA: [Nama Media] | JUDUL BERITA: [Judul] | RINGKASAN: [Ringkasan] | VALIDASI: [Alasan Tepercaya]".
+
+    ASSETS PRODUKSI:
+    1. tiktokCover: Prompt cinematic rasio 9:16 menyesuaikan judul dan gaya visual.
+    2. youtubeCover: Prompt cinematic rasio 16:9 menyesuaikan judul dan gaya visual.
+    3. hashtags: Daftar 5 hashtag viral sesuai judul.
+
+    Visual Style for Prompts: Every 'subject' MUST start with: "${visualStyle}".
   `;
 
-  const prompt = `Lakukan verifikasi fakta dan buatkan storytelling edukatif sinematik tentang: "${title}". Buatkan total ${numScenes + 1} scene (termasuk 1 scene verifikasi sumber di akhir). Gaya: "${visualStyle}". Bahasa: ${language}`;
+  const prompt = `Lakukan verifikasi fakta dan buatkan storytelling edukatif sinematik tentang: "${title}". User meminta ${numScenes} scene cerita. Anda wajib menghasilkan total ${numScenes + 1} scene (N+1 rule). Gaya: "${visualStyle}". Bahasa: ${language}`;
 
   const structuredPromptSchema = {
     type: Type.OBJECT,
@@ -80,7 +90,7 @@ export const generateStoryContent = async (req: StoryRequest): Promise<StoryResu
           },
           tiktokCover: { type: Type.STRING },
           youtubeCover: { type: Type.STRING },
-          hashtags: { type: Type.ARRAY, items: { type: Type.STRING } }
+          hashtags: { type: Type.ARRAY, items: { type: Type.STRING }, minItems: 5, maxItems: 5 }
         },
         required: ['title', 'numScenes', 'visualStyle', 'language', 'scenes', 'tiktokCover', 'youtubeCover', 'hashtags']
       }
@@ -88,22 +98,7 @@ export const generateStoryContent = async (req: StoryRequest): Promise<StoryResu
   });
 
   const jsonStr = response.text || '{}';
-  const result = JSON.parse(jsonStr) as StoryResult;
-  
-  // Extract URLs from grounding metadata if available to add transparency
-  const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-  if (groundingChunks && result.scenes.length > 0) {
-    const lastScene = result.scenes[result.scenes.length - 1];
-    const urls = groundingChunks
-      .filter((chunk: any) => chunk.web?.uri)
-      .map((chunk: any) => chunk.web.uri);
-    
-    if (urls.length > 0) {
-      lastScene.narration += `\n\nREFERENSI URL: ${urls.join(', ')}`;
-    }
-  }
-
-  return result;
+  return JSON.parse(jsonStr) as StoryResult;
 };
 
 export const generateAffiliateContent = async (
@@ -115,19 +110,8 @@ export const generateAffiliateContent = async (
   numScenes: number
 ) => {
   const systemInstruction = `
-    Kamu adalah PIKHACU UGC TOOL - Pakar AI Video & Affiliate Marketing.
+    Kamu adalah ANOALABS UGC TOOL - Pakar AI Video & Affiliate Marketing.
     Tugas: Menghasilkan Video Prompt untuk VEO 3.1 & FLOW dengan fitur LIP-SYNC & VOICE PROMOTION.
-
-    Gaya Konten: ${style}
-    Target Jumlah Adegan: ${numScenes}
-
-    ATURAN EMAS VIDEO PROMPT (VEO 3 / FLOW):
-    1. VOICE SYNC (WAJIB): Sertakan narasi promosi spesifik dalam Bahasa Indonesia di dalam prompt. 
-    2. AFFILIATE PERSUASION: Dialog harus persuasif untuk produk ${productName}.
-    3. VISUAL LOCK: Sebutkan detail visual produk dari gambar.
-    4. TECHNICAL: Instruction "Natural mouth movements", "8k cinematic".
-
-    OUTPUT STRUCTURE: JSON (summary, caption, assets).
   `;
 
   const parts: any[] = [{ text: `Generate ${numScenes} scenes for "${productName}" in style "${style}".` }];

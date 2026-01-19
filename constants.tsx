@@ -18,7 +18,7 @@ export const LANGUAGES: Language[] = [
 ];
 
 export const APP_CONFIG = {
-  NAME: 'PIKHACU.AI',
+  NAME: 'ANOALABS',
   VERSION: 'ULTIMATE v4',
   TAGLINE: '🎬 STORYTELLING EDUKATIF SINEMATIK'
 };
